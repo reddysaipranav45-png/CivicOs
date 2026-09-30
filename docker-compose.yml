@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: civicos
+      POSTGRES_USER: civicos
+      POSTGRES_PASSWORD: civicos_local
+    ports: ["5433:5432"]
+    volumes: ["civicos_pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U civicos -d civicos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://civicos:civicos_local@db:5432/civicos}
+      CORS_ORIGINS: http://localhost:5173
+    ports: ["8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes: ["./backend/app:/app/app"]
+volumes:
+  civicos_pgdata:
